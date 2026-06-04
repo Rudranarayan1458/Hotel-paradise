@@ -10,13 +10,15 @@
     <h1>Room Booking</h1>
 </header>
 
-<form class="booking-form">
+<!-- Form starts here -->
+<form class="booking-form" id="bookingForm" onsubmit="event.preventDefault();">
 
     <input type="text" placeholder="Enter Name" required>
 
     <input type="email" placeholder="Enter Email" required>
 
-    <input type="tel" placeholder="Phone Number" required>
+    <!-- 1. Phone number input with an assigned ID -->
+    <input type="tel" id="phone-number-id" placeholder="Phone Number" required>
 
     <select>
         <option>Single Room</option>
@@ -31,8 +33,91 @@
     <label>Check Out</label>
     <input type="date">
 
-    <button type="submit">Confirm Booking</button>
+    <!-- 2. Invisible ReCAPTCHA container required by Firebase -->
+    <div id="recaptcha-container"></div>
+
+    <!-- 3. Button to trigger OTP generation -->
+    <button type="button" id="sendOtpBtn" onclick="sendOTP()">Send OTP</button>
+
+    <!-- 4. Hidden OTP input section (reveals automatically after OTP is sent) -->
+    <div id="otp-section" style="display: none; margin-top: 15px;">
+        <input type="text" id="otp-input-id" placeholder="Enter 6-Digit OTP" style="margin-bottom: 10px;">
+        <button type="button" onclick="verifyOTP()">Verify & Confirm Booking</button>
+    </div>
 
 </form>
+
+<!-- 5. Firebase SDK Compatibility Links -->
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-app.compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.0.0/firebase-auth.compat.js"></script>
+
+<script>
+  // 6. Your actual Firebase Configuration (From file 49129.jpg)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCRdf4Go1_IYHQOu09lYBGXbpw", // Double-check if this is your full API Key from your original snippet
+    authDomain: "hotel-paradise-70e9c.firebaseapp.com",
+    projectId: "hotel-paradise-70e9c",
+    storageBucket: "hotel-paradise-70e9c.firebasestorage.app",
+    messagingSenderId: "354845769249",
+    appId: "1:354845769249:web:31217a456c3a0"
+  };
+
+  // Initializing Firebase Auth
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+
+  // Setting up Invisible ReCAPTCHA
+  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+    'size': 'invisible'
+  });
+
+  // Function to Send OTP
+  function sendOTP() {
+    const phoneNumber = document.getElementById('phone-number-id').value;
+    
+    if(phoneNumber === "") {
+        alert("Please enter your phone number first!");
+        return;
+    }
+
+    // Appending India's country code (+91) automatically
+    const fullPhoneNumber = "+91" + phoneNumber; 
+    const appVerifier = window.recaptchaVerifier;
+
+    auth.signInWithPhoneNumber(fullPhoneNumber, appVerifier)
+      .then((confirmationResult) => {
+        window.confirmationResult = confirmationResult;
+        alert("OTP has been sent to your mobile number!");
+        
+        // Show the OTP verification input and hide the initial Send OTP button
+        document.getElementById('otp-section').style.display = 'block';
+        document.getElementById('sendOtpBtn').style.display = 'none';
+      }).catch((error) => {
+        alert("Failed to send OTP: " + error.message);
+      });
+  }
+
+  // Function to Verify OTP
+  function verifyOTP() {
+    const code = document.getElementById('otp-input-id').value;
+    
+    if(code === "") {
+        alert("Please enter the received OTP!");
+        return;
+    }
+    
+    window.confirmationResult.confirm(code)
+      .then((result) => {
+        alert("Verification Successful! Your room booking is confirmed.");
+        
+        // Optional: If you connect a real database backend, submit the form data here:
+        // document.getElementById('bookingForm').submit();
+      }).catch((error) => {
+        alert("Invalid OTP! Please try again with the correct code.");
+      });
+  }
+</script>
+
 </body>
-</html>
+    </html>
+
